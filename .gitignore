@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Cache / generated data
+cache/fits/*.fits
+cache/fits/*.fit
+cache/fits/*.fits.gz
+cache/fits/*.fit.gz
+cache/metadata/*
+
+# Keep cache folders but not contents
+!cache/fits/.gitkeep
+!cache/metadata/.gitkeep
+
+# macOS
+.DS_Store
+
+# Editor junk
+.vscode/
+.idea/

@@ -1,0 +1,39 @@
+SKYBOX quick test examples
+
+Use these from the main menu.
+
+1. Spiral galaxy, colour overview
+   Target: M101
+   Band:   blend
+   Field:  atlas
+
+2. Big galaxy context field
+   Target: M31
+   Band:   blend
+   Field:  survey
+
+3. Compact star cluster
+   Target: M13
+   Band:   mid
+   Field:  wide
+
+4. Nearby high-proper-motion star
+   Target: Wolf 395
+   Band:   long
+   Field:  core
+
+5. Blue/short-band galaxy field
+   Target: M101
+   Band:   short
+   Field:  atlas
+
+Viewer controls
+
+z = zoom
+b = brightness
+c = contrast
+m = metadata overlay
+h = help overlay
+k = cache overlay
+n = new target
+q = quit

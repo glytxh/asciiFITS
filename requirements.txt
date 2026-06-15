@@ -1,0 +1,7 @@
+astropy
+astroquery
+numpy
+requests
+rich
+pillow
+scipy
