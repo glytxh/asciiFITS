@@ -6,13 +6,6 @@ A Mac-first terminal FITS viewer for Pan-STARRS sky-survey data.
 
 SKYBOX resolves an object name or ICRS coordinate, fetches a Pan-STARRS FITS cutout, and renders it as a rich ASCII skybox in the terminal.
 
-## Run from source
-
-From the project folder:
-
-    cd /Users/glytxh/Documents/asciiFITS
-    source .venv/bin/activate
-    python -m skybox
 
 ## Bands
 
