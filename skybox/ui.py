@@ -108,6 +108,8 @@ def show_title():
     console.print()
 
 def choose_survey():
+    ordered_keys = ["short", "mid", "long", "blend"]
+
     table = Table(
         title="Band mode",
         width=PANEL_WIDTH,
@@ -115,36 +117,57 @@ def choose_survey():
         border_style="white",
     )
 
-    table.add_column("Key", no_wrap=True, style="bold")
+    table.add_column("#", justify="right", no_wrap=True, style="bold")
+    table.add_column("Band", no_wrap=True, style="bold")
     table.add_column("Role", no_wrap=True)
     table.add_column("Data")
 
-    for key, survey in SURVEYS.items():
+    for index, key in enumerate(ordered_keys, start=1):
+        survey = SURVEYS[key]
+
         if survey.ps1_filter:
             band = f"Pan-STARRS {survey.ps1_filter}"
         else:
             band = "Pan-STARRS DR1 colour"
 
-        table.add_row(key, survey.wavelength, band)
+        table.add_row(str(index), key, survey.wavelength, band)
 
     console.print(table)
 
     console.print("[bold yellow]Note:[/bold yellow] blend mode only works with [bold]atlas[/bold] or [bold]survey[/bold] field scales.", style="dim")
-    choice = console.input("\n[bold cyan]Select band[/bold cyan] [short/mid/long/blend] › ").strip().lower()
+    console.print("[dim]Pick a number, type a band name, or q to cancel. Default: 4 blend.[/dim]")
+
+    choice = console.input("\n[bold cyan]Band[/bold cyan] › ").strip().lower()
 
     if choice in {"q", "quit", "exit"}:
         raise KeyboardInterrupt
 
     if choice == "":
-        choice = "blend"
+        choice = "4"
+
+    number_map = {
+        "1": "short",
+        "2": "mid",
+        "3": "long",
+        "4": "blend",
+    }
+
+    choice = number_map.get(choice, choice)
 
     if choice not in SURVEYS:
         raise ValueError(f"Unknown band mode: {choice}")
 
     return SURVEYS[choice]
 
-
 def choose_field_preset():
+    field_rows = [
+        ("core", "0.062°", "native PS1 FITS", "close target / core"),
+        ("field", "0.167°", "native PS1 FITS", "standard object field"),
+        ("wide", "0.417°", "native PS1 FITS", "widest native cutout"),
+        ("atlas", "0.800°", "Pan-STARRS HiPS", "large-object morphology"),
+        ("survey", "2.400°", "Pan-STARRS HiPS", "broad context"),
+    ]
+
     table = Table(
         title="Field size",
         width=PANEL_WIDTH,
@@ -152,27 +175,35 @@ def choose_field_preset():
         border_style="white",
     )
 
-    table.add_column("Key", no_wrap=True, style="bold")
+    table.add_column("#", justify="right", no_wrap=True, style="bold")
+    table.add_column("Field", no_wrap=True, style="bold")
     table.add_column("Width", no_wrap=True)
     table.add_column("Source")
     table.add_column("Use")
 
-    table.add_row("core", "0.062°", "native PS1 FITS", "close target / core")
-    table.add_row("field", "0.167°", "native PS1 FITS", "standard object field")
-    table.add_row("wide", "0.417°", "native PS1 FITS", "widest native cutout")
-    table.add_row("atlas", "0.800°", "Pan-STARRS HiPS", "large-object morphology")
-    table.add_row("survey", "2.400°", "Pan-STARRS HiPS", "broad context")
+    for index, row in enumerate(field_rows, start=1):
+        table.add_row(str(index), *row)
 
     console.print(table)
 
     console.print("[bold yellow]Note:[/bold yellow] blend requires [bold]atlas[/bold] or [bold]survey[/bold]. Use short/mid/long for core, field, or wide.", style="dim")
-    choice = console.input("\n[bold cyan]Select field[/bold cyan] [core/field/wide/atlas/survey] › ").strip().lower()
+    console.print("[dim]Pick a number, type a field name, or q to cancel. Default: 4 atlas.[/dim]")
+
+    choice = console.input("\n[bold cyan]Field[/bold cyan] › ").strip().lower()
 
     if choice in {"q", "quit", "exit"}:
         raise KeyboardInterrupt
 
     if choice == "":
-        choice = "atlas"
+        choice = "4"
+
+    number_map = {
+        "1": "core",
+        "2": "field",
+        "3": "wide",
+        "4": "atlas",
+        "5": "survey",
+    }
 
     legacy = {
         "tight": "core",
@@ -180,35 +211,15 @@ def choose_field_preset():
         "grand": "survey",
     }
 
+    choice = number_map.get(choice, choice)
     choice = legacy.get(choice, choice)
 
-    if choice not in {"core", "field", "wide", "atlas", "survey"}:
-        raise ValueError("Unknown field preset. Use core, field, wide, atlas, or survey.")
+    valid = {row[0] for row in field_rows}
+
+    if choice not in valid:
+        raise ValueError(f"Unknown field size: {choice}")
 
     return choice
-
-
-def format_icrs(target):
-    coord = SkyCoord(
-        ra=target.ra_deg * u.deg,
-        dec=target.dec_deg * u.deg,
-        frame="icrs",
-    )
-
-    compact = coord.to_string(
-        "hmsdms",
-        sep=" ",
-        precision=2,
-        alwayssign=True,
-        pad=True,
-    )
-
-    return {
-        "compact": compact,
-        "ra_deg": f"{target.ra_deg:.6f}",
-        "dec_deg": f"{target.dec_deg:.6f}",
-    }
-
 
 def crop_or_pad_text_line(line, width):
     if isinstance(line, Text):
