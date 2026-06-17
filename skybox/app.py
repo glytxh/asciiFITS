@@ -3,9 +3,11 @@ from skybox.cache import prune_fits_cache, list_fits_cache, fits_cache_size_mb, 
 from skybox.config import ASCII_HEIGHT, ASCII_WIDTH, CACHE_FITS_DIR
 from skybox.fetcher import fetch_fits_cutout
 from skybox.loading import loading_task
+from skybox.catalog import catalog_entries
 from skybox.metadata import get_basic_metadata
 from skybox.resolver import resolve_target
 from rich.text import Text
+from rich.table import Table
 
 from skybox.ui import (
     choose_field_preset,
@@ -109,6 +111,59 @@ def crop_lines_center(lines, width):
     return [crop_line_center(line, width) for line in lines]
 
 
+def choose_catalog_target():
+    entries = catalog_entries()
+
+    table = Table(
+        title="SKYBOX object catalog",
+        width=104,
+        show_lines=False,
+        border_style="white",
+    )
+
+    table.add_column("#", justify="right", no_wrap=True, style="bold")
+    table.add_column("Object", no_wrap=True, style="bold cyan")
+    table.add_column("Name", no_wrap=True)
+    table.add_column("Group", no_wrap=True)
+    table.add_column("Field note")
+
+    for index, entry in enumerate(entries, start=1):
+        table.add_row(
+            str(index),
+            entry["object"],
+            entry["name"],
+            entry["group"],
+            entry["note"],
+        )
+
+    console.print()
+    console.print(table)
+    console.print("[dim]Pick a number, type an object name, or q to cancel.[/dim]")
+
+    while True:
+        choice = console.input("\n[bold cyan]Catalog target[/bold cyan] › ").strip()
+
+        if choice.lower() in {"q", "quit", "exit"}:
+            return None
+
+        if choice.isdigit():
+            index = int(choice)
+
+            if 1 <= index <= len(entries):
+                return entries[index - 1]["object"]
+
+        normalised = choice.lower()
+
+        for entry in entries:
+            if normalised in {
+                entry["object"].lower(),
+                entry["name"].lower(),
+            }:
+                return entry["object"]
+
+        console.print("[red]Unknown catalog choice. Enter a listed number, object name, or q.[/red]")
+
+
 def render_view(
     fetch_result,
     target,
@@ -194,10 +249,16 @@ def render_view(
 def run_query_once():
     show_title()
 
-    target_query = console.input("[bold cyan]Target[/bold cyan] name or ICRS coordinates › ").strip()
+    target_query = console.input("[bold cyan]Target[/bold cyan] name, ICRS coordinates, or [bold]c[/bold] catalog › ").strip()
 
     if target_query.lower() in {"q", "quit", "exit"}:
         return None
+
+    if target_query.lower() in {"c", "catalog", "list", "objects"}:
+        target_query = choose_catalog_target()
+
+        if target_query is None:
+            return None
 
     if not target_query:
         raise ValueError("No target entered.")
