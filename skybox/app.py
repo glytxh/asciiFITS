@@ -185,6 +185,127 @@ def ask_export_metadata():
         console.print("[red]Choose 1, 2, or q.[/red]")
 
 
+class CachedFetchResult:
+    def __init__(self, path, requested_field, note="cache"):
+        self.path = path
+        self.requested_field = requested_field
+        self.actual_fov_deg = None
+        self.size_px = None
+        self.note = note
+
+
+def cached_field_from_name(file_name):
+    name = file_name.lower()
+
+    for field in ["survey", "atlas", "wide", "field", "core"]:
+        if f"_{field}_" in name or name.endswith(f"_{field}.fits"):
+            return field
+
+    if "2.4deg" in name:
+        return "survey"
+
+    if "0.8deg" in name:
+        return "atlas"
+
+    if "6000px" in name or "0.417deg" in name:
+        return "wide"
+
+    return "cache"
+
+
+def cached_band_from_name(file_name, fallback):
+    name = file_name.lower()
+
+    if "_color_" in name or "_blend_" in name:
+        return "blend"
+
+    if "_g_" in name:
+        return "short"
+
+    if "_i_" in name:
+        return "mid"
+
+    if "_y_" in name:
+        return "long"
+
+    return getattr(fallback, "key", "cache")
+
+
+def cached_fetch_result_from_row(row):
+    file_path = row["path"]
+    field = cached_field_from_name(row["name"])
+
+    return CachedFetchResult(
+        path=file_path,
+        requested_field=field,
+        note="cache",
+    )
+
+
+def cached_fits_by_number(choice):
+    cache_rows = list_fits_cache(CACHE_FITS_DIR, limit=15)
+
+    if not choice.isdigit():
+        return None
+
+    index = int(choice)
+
+    if not (1 <= index <= len(cache_rows)):
+        console.print("[red]No cached FITS with that number.[/red]")
+        return None
+
+    return cached_fetch_result_from_row(cache_rows[index - 1])
+
+
+def choose_cached_fits():
+    cache_rows = list_fits_cache(CACHE_FITS_DIR, limit=15)
+
+    if not cache_rows:
+        console.print("[yellow]FITS cache is empty.[/yellow]")
+        return None
+
+    table = Table(
+        title="SKYBOX cache manager",
+        width=104,
+        show_lines=False,
+        border_style="white",
+    )
+
+    table.add_column("#", justify="right", no_wrap=True, style="bold")
+    table.add_column("Cached FITS", no_wrap=True, style="bold cyan")
+    table.add_column("Size", justify="right", no_wrap=True)
+    table.add_column("Field", no_wrap=True)
+    table.add_column("Band", no_wrap=True)
+
+    for index, row in enumerate(cache_rows, start=1):
+        name = row["name"]
+        table.add_row(
+            str(index),
+            name[:58],
+            f"{row['size_mb']:.1f} MB",
+            cached_field_from_name(name),
+            cached_band_from_name(name, type("FallbackSurvey", (), {"key": "cache"})()),
+        )
+
+    console.print()
+    console.print(table)
+    console.print("[dim]Pick a number, or q to cancel.[/dim]")
+
+    while True:
+        choice = console.input("\n[bold cyan]Cached FITS[/bold cyan] › ").strip().lower()
+
+        if choice in {"q", "quit", "exit"}:
+            return None
+
+        if choice.isdigit():
+            index = int(choice)
+
+            if 1 <= index <= len(cache_rows):
+                return cached_fetch_result_from_row(cache_rows[index - 1])
+
+        console.print("[red]Choose a listed number, or q.[/red]")
+
+
 def render_view(
     fetch_result,
     target,
@@ -234,7 +355,7 @@ def render_view(
     console.clear()
 
     if show_cache:
-        overlay = cache_overlay_lines(list_fits_cache(CACHE_FITS_DIR, limit=5))
+        overlay = cache_overlay_lines(list_fits_cache(CACHE_FITS_DIR, limit=15))
         show_ascii_frame_with_overlay(ascii_lines, overlay_lines=overlay, overlay_x=3, overlay_y=3, frame_width=frame_width)
     elif show_help:
         overlay = help_overlay_lines()
@@ -256,6 +377,7 @@ def render_view(
         "[bold]m[/bold]=metadata  "
         "[bold]h[/bold]=help  "
         "[bold]k[/bold]=cache  "
+        "[bold]o[/bold]=open cache  "
         "[bold]n[/bold]=new target  "
         "[bold]q[/bold]=quit",
         style="dim",
@@ -317,7 +439,7 @@ def run_query_once():
                 f"Original error: {error}"
             )
 
-    prune_fits_cache(CACHE_FITS_DIR, keep=5)
+    prune_fits_cache(CACHE_FITS_DIR, keep=15)
 
     with loading_task("Fetching target metadata"):
         metadata = get_basic_metadata(target.name)
@@ -368,7 +490,19 @@ def viewer_loop(target, survey, field_preset, fetch_result, metadata):
             show_cache=show_cache,
         )
 
-        command = console.input("\nPress key then Enter [z/b/c/r/w/e/m/h/k/n/q]: ").strip().lower()
+        command = console.input("\nPress key then Enter [z/b/c/r/w/e/m/h/k/o/n/q or cache #]: ").strip().lower()
+
+        if show_cache and command.isdigit():
+            cached_fetch_result = cached_fits_by_number(command)
+
+            if cached_fetch_result is not None:
+                source_fetch_result = cached_fetch_result
+                source_field_preset = cached_fetch_result.requested_field
+                show_meta = False
+                show_help = False
+                show_cache = False
+                console.print(f"[green]Opened cached FITS:[/green] {cached_fetch_result.path.name}")
+                continue
 
         if command in {"z", "zoom"}:
             zoom_level += 1
@@ -428,6 +562,18 @@ def viewer_loop(target, survey, field_preset, fetch_result, metadata):
                 show_meta = False
                 show_cache = False
 
+        elif command in {"o", "open", "open cache", "cache manager", "cached"}:
+            cached_fetch_result = choose_cached_fits()
+
+            if cached_fetch_result is not None:
+                source_fetch_result = cached_fetch_result
+                source_field_preset = cached_fetch_result.requested_field
+                show_meta = False
+                show_help = False
+                show_cache = False
+                console.print(f"[green]Opened cached FITS:[/green] {cached_fetch_result.path.name}")
+                continue
+
         elif command in {"k", "cache"}:
             show_cache = not show_cache
             if show_cache:
@@ -444,12 +590,12 @@ def viewer_loop(target, survey, field_preset, fetch_result, metadata):
             continue
 
         else:
-            console.print("Unknown command. Type z, b, c, r, w, e, m, h, k, n, or q, then press Enter.", style="red")
+            console.print("Unknown command. Type z, b, c, r, w, e, m, h, k, o, n, or q, then press Enter.", style="red")
 
 
 def run_app():
     ensure_cache_dirs()
-    prune_fits_cache(CACHE_FITS_DIR, keep=5)
+    prune_fits_cache(CACHE_FITS_DIR, keep=15)
 
     while True:
         try:

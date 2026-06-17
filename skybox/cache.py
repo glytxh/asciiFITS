@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-def prune_fits_cache(cache_dir, keep=5):
+def prune_fits_cache(cache_dir, keep=15):
     """
     Keep only the newest FITS files in the cache directory.
 
@@ -44,7 +44,7 @@ def prune_fits_cache(cache_dir, keep=5):
     return deleted
 
 
-def list_fits_cache(cache_dir, limit=5):
+def list_fits_cache(cache_dir, limit=15):
     """
     Return newest cached FITS files as simple dictionaries.
     """
@@ -70,6 +70,7 @@ def list_fits_cache(cache_dir, limit=5):
         rows.append(
             {
                 "name": file_path.name,
+                "path": file_path,
                 "size_mb": size_mb,
             }
         )

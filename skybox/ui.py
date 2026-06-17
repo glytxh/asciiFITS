@@ -430,9 +430,9 @@ def help_overlay_lines():
         "│ z  zoom              b  brightness           │",
         "│ c  contrast          r  render mode          │",
         "│ w  view size         e  export PNG           │",
-        "│ m  metadata          k  cache                │",
-        "│ n  new target        h  help                 │",
-        "│ q  quit                                      │",
+        "│ m  metadata          k  cache overlay        │",
+        "│ o  open cache        n  new target           │",
+        "│ h  help              q  quit                 │",
         "├──────────────────────────────────────────────┤",
         "│ render: basic / rich / block                 │",
         "│ view:   small / wide                         │",
@@ -447,7 +447,7 @@ def cache_overlay_lines(cache_rows):
     """
     rows = [
         "┌──────────────────────────────────────────────┐",
-        "│ SKYBOX FITS CACHE                            │",
+        "│ SKYBOX FITS CACHE  newest 15                 │",
         "├──────────────────────────────────────────────┤",
     ]
 
@@ -463,7 +463,7 @@ def cache_overlay_lines(cache_rows):
     rows.extend(
         [
             "├──────────────────────────────────────────────┤",
-            "│ Keeps newest 5 FITS files automatically.     │",
+            "│ Type number to open · k hides cache.         │",
             "└──────────────────────────────────────────────┘",
         ]
     )
