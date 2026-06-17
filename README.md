@@ -1,4 +1,4 @@
-<img width="626" height="826" alt="4" src="https://github.com/user-attachments/assets/3c715d53-c078-4abd-879a-812236415754" /><img width="626" height="826" alt="2" src="https://github.com/user-attachments/assets/a596512f-ecdd-4f87-b425-f806b5d171f2" /><img width="628" height="818" alt="starbox_2" src="https://github.com/user-attachments/assets/bd288968-c3b4-4428-9783-1b052bbb61e3" />
+<img width="628" height="818" alt="starbox_2" src="https://github.com/user-attachments/assets/bd288968-c3b4-4428-9783-1b052bbb61e3" />
 # SKYBOX
 
 SKYBOX v1.9 Theme Cycle
